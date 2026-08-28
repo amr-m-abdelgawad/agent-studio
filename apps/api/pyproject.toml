@@ -7,11 +7,20 @@ dependencies = [
     "uvicorn[standard]>=0.32.0",
     "psycopg[binary,pool]>=3.2.0",
     "httpx>=0.27.0",
+    "sqlalchemy>=2.0.0",
+    "alembic>=1.14.0",
+    "argon2-cffi>=23.1.0",
+    "pydantic-settings>=2.6.0",
+    "email-validator>=2.2.0",
     "studio-vault",
     "studio-object-store",
 ]
 
 [project.optional-dependencies]
+temporal = [
+    "temporalio>=1.28.0",
+]
+
 otel = [
     "opentelemetry-api>=1.28.0",
     "opentelemetry-sdk>=1.28.0",
@@ -24,7 +33,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/studio_api"]
+packages = ["src/studio_api", "src/studio"]
 
 [tool.uv.sources]
 studio-vault = { path = "../../packages/vault", editable = true }
