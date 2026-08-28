@@ -39,8 +39,7 @@ docker compose -f infra/compose/docker-compose.yml -p agent-studio start studio-
 1. `docker compose -f infra/compose/docker-compose.yml -p agent-studio ps studio-worker-ping`
    should show `Exit` after stop and `Up` after start.
 2. Temporal UI (if exposed) or worker logs should show polling on `studio-default` after start.
-3. M0 harness tests (when added by Mazen) will automate isolation/restart checks; until then
-   `tests/m0/` remains a placeholder.
+3. M0 harness tests under `tests/m0/` automate ping-restart checks (`pytest -m m0_ping_restart`).
 
 ## Notes
 

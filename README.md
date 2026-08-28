@@ -53,7 +53,7 @@ packages/vault/        Vault / GCP Secret Manager adapters
 packages/object-store/ MinIO / GCS adapters
 infra/compose/         Docker Compose stack
 infra/temporal/        Temporal docs and runbooks
-tests/m0/              Placeholder only (no Mazen harness in IN-01)
+tests/m0/              M0 QA harness (isolation, ping-restart, exit)
 tests/unit/            Minimal unit tests
 ```
 
