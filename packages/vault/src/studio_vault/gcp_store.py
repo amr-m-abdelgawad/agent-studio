@@ -17,9 +17,7 @@ class GcpSecretStore(SecretStore):
     def get_secret(self, ref: SecretRef) -> str:
         if not self._project_id:
             raise RuntimeError("GCP_PROJECT_ID is required for GcpSecretStore")
-        name = (
-            f"projects/{self._project_id}/secrets/{ref.name}/versions/{ref.version}"
-        )
+        name = f"projects/{self._project_id}/secrets/{ref.name}/versions/{ref.version}"
         response = self._client.access_secret_version(request={"name": name})
         return response.payload.data.decode("utf-8")
 
