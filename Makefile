@@ -31,5 +31,8 @@ lint:
 	ruff check apps packages workers
 	ruff format --check apps packages workers
 
+migrate:
+	cd apps/api && alembic upgrade head
+
 unit:
-	pytest tests/unit -q
+	python3 -m pytest tests/unit -q

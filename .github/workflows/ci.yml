@@ -34,7 +34,7 @@ jobs:
           python-version: "3.12"
       - name: Install dependencies
         run: |
-          pip install pytest httpx fastapi psycopg[binary]
+          pip install pytest httpx fastapi psycopg[binary] sqlalchemy alembic argon2-cffi pydantic-settings email-validator
           pip install ./packages/vault ./packages/object-store ./apps/api
       - name: Unit tests
         run: make unit

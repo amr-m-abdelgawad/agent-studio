@@ -7,6 +7,9 @@ description = "Agent Studio M0 infrastructure bootstrap"
 [tool.pytest.ini_options]
 testpaths = ["tests/unit"]
 pythonpath = ["apps/api/src", "packages/vault/src", "packages/object-store/src", "workers/adk/src"]
+markers = [
+    "temporal: tests requiring a live Temporal server",
+]
 
 [tool.ruff]
 line-length = 100
@@ -14,3 +17,6 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+"apps/api/alembic/**" = ["E501"]

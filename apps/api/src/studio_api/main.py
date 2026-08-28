@@ -6,8 +6,15 @@ from contextlib import asynccontextmanager
 import httpx
 import psycopg
 from fastapi import FastAPI, Response, status
+from fastapi.exceptions import RequestValidationError
 from studio_object_store.minio_store import MinioObjectStore
 from studio_vault.vault_store import VaultSecretStore
+
+from studio_api.db import get_session_factory, init_db
+from studio_api.errors import APIError, api_error_handler, validation_exception_handler
+from studio_api.middleware.request import RequestMiddleware
+from studio_api.routers import api_keys, audit, auth, debug, me, org, workspaces
+from studio_api.services.invites import bootstrap_org
 
 
 def _maybe_setup_otel(app: FastAPI) -> None:
@@ -32,10 +39,33 @@ def _maybe_setup_otel(app: FastAPI) -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     _maybe_setup_otel(app)
+    init_db()
+    db = get_session_factory()()
+    try:
+        bootstrap_org(db)
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        db.close()
     yield
 
 
 app = FastAPI(title="Agent Studio API", lifespan=lifespan)
+
+app.add_exception_handler(APIError, api_error_handler)
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
+
+app.add_middleware(RequestMiddleware)
+
+app.include_router(auth.router)
+app.include_router(me.router)
+app.include_router(org.router)
+app.include_router(workspaces.router)
+app.include_router(api_keys.router)
+app.include_router(audit.router)
+app.include_router(debug.router)
 
 
 def _postgres_ok() -> bool:
@@ -57,7 +87,6 @@ def _temporal_ok() -> bool:
             response = client.get(f"http://{host.replace(':7233', ':8233')}/")
             return response.status_code < 500
     except Exception:
-        # gRPC health is not exposed over HTTP in auto-setup; fall back to TCP reachability.
         try:
             import socket
 
