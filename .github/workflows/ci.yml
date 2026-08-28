@@ -1,0 +1,103 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  compose-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate compose file
+        run: docker compose -f infra/compose/docker-compose.yml config --quiet
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install linters
+        run: pip install ruff
+      - name: Ruff
+        run: make lint
+
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: |
+          pip install pytest httpx fastapi psycopg[binary]
+          pip install ./packages/vault ./packages/object-store ./apps/api
+      - name: Unit tests
+        run: make unit
+
+  ping-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check dependency pins
+        run: bash scripts/check_pins.sh
+      - name: Build ping worker image
+        run: docker build -f workers/adk/Dockerfile .
+
+  m0-isolation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: M0 isolation harness placeholder
+        run: |
+          if [ -f tests/m0/harness_isolation.py ]; then
+            echo "Harness present — run isolation tests here"
+            exit 1
+          fi
+          echo "Skipping: tests/m0 harness not present (placeholder only)"
+
+  m0-ping-restart:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: M0 ping-restart harness placeholder
+        run: |
+          if [ -f tests/m0/harness_ping_restart.py ]; then
+            echo "Harness present — run ping-restart tests here"
+            exit 1
+          fi
+          echo "Skipping: tests/m0 harness not present (placeholder only)"
+
+  m0-exit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: M0 exit harness placeholder
+        run: |
+          if [ -f tests/m0/harness_exit.py ]; then
+            echo "Harness present — run exit tests here"
+            exit 1
+          fi
+          echo "Skipping: tests/m0 harness not present (placeholder only)"
+
+  m1-auth:
+    if: false
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "M1 not enabled"
+
+  m1-invites:
+    if: false
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "M1 not enabled"
+
+  m1-sessions:
+    if: false
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "M1 not enabled"
