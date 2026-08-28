@@ -81,11 +81,14 @@ def _requires_workspace_admin(actor_membership: WorkspaceMember | None) -> bool:
 
 
 def _count_owners(db: Session, workspace_id: uuid.UUID) -> int:
-    return db.scalar(
-        select(func.count())
-        .select_from(WorkspaceMember)
-        .where(WorkspaceMember.workspace_id == workspace_id, WorkspaceMember.role == "owner")
-    ) or 0
+    return (
+        db.scalar(
+            select(func.count())
+            .select_from(WorkspaceMember)
+            .where(WorkspaceMember.workspace_id == workspace_id, WorkspaceMember.role == "owner")
+        )
+        or 0
+    )
 
 
 @router.post("", response_model=WorkspaceResponse, status_code=201)

@@ -12,8 +12,7 @@ class WorkflowStartResult:
 
 
 class TemporalClientProtocol(Protocol):
-    async def start_ping_workflow(self, workspace_id: uuid.UUID) -> WorkflowStartResult:
-        ...
+    async def start_ping_workflow(self, workspace_id: uuid.UUID) -> WorkflowStartResult: ...
 
 
 class FakeTemporalClient:
