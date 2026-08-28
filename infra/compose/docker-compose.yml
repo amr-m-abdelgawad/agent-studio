@@ -1,0 +1,154 @@
+services:
+  postgres:
+    image: postgres:16.4-alpine
+    container_name: agent-studio-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-studio}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-studio}
+      POSTGRES_DB: ${POSTGRES_DB:-studio}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-studio} -d ${POSTGRES_DB:-studio}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - agent-studio
+
+  temporal-namespace-init:
+    image: temporalio/admin-tools:1.25.2
+    container_name: agent-studio-temporal-ns-init
+    depends_on:
+      temporal:
+        condition: service_healthy
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        tctl --address temporal:7233 namespace describe studio-dev >/dev/null 2>&1 \
+          || tctl --address temporal:7233 namespace register studio-dev --retention 3
+    networks:
+      - agent-studio
+
+  temporal:
+    image: temporalio/auto-setup:1.25.2
+    container_name: agent-studio-temporal
+    environment:
+      DB: postgres12
+      DB_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-studio}
+      POSTGRES_PWD: ${POSTGRES_PASSWORD:-studio}
+      POSTGRES_SEEDS: postgres
+      DYNAMIC_CONFIG_FILE_PATH: config/dynamicconfig/development-sql.yaml
+    ports:
+      - "7233:7233"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "tctl", "--address", "temporal:7233", "cluster", "health"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 30s
+    networks:
+      - agent-studio
+
+  minio:
+    image: minio/minio:RELEASE.2024-12-18T13-15-44Z
+    container_name: agent-studio-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    networks:
+      - agent-studio
+
+  vault:
+    image: hashicorp/vault:1.18.1
+    container_name: agent-studio-vault
+    cap_add:
+      - IPC_LOCK
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_TOKEN:-dev-root-token}
+      VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+    ports:
+      - "8200:8200"
+    healthcheck:
+      test: ["CMD", "vault", "status", "-address=http://127.0.0.1:8200"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    networks:
+      - agent-studio
+
+  api:
+    build:
+      context: ../..
+      dockerfile: apps/api/Dockerfile
+    container_name: agent-studio-api
+    env_file:
+      - ../../.env.example
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-studio}:${POSTGRES_PASSWORD:-studio}@postgres:5432/${POSTGRES_DB:-studio}
+      TEMPORAL_HOST: temporal:7233
+      MINIO_ENDPOINT: http://minio:9000
+      VAULT_ADDR: http://vault:8200
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      temporal:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+    networks:
+      - agent-studio
+
+  studio-worker-ping:
+    build:
+      context: ../..
+      dockerfile: workers/adk/Dockerfile
+    container_name: agent-studio-worker-ping
+    env_file:
+      - ../../.env.example
+    environment:
+      TEMPORAL_HOST: temporal:7233
+      TEMPORAL_NAMESPACE: studio-dev
+      TEMPORAL_TASK_QUEUE: studio-default
+    depends_on:
+      temporal-namespace-init:
+        condition: service_completed_successfully
+    networks:
+      - agent-studio
+
+networks:
+  agent-studio:
+    name: agent-studio
+
+volumes:
+  postgres-data:
+  minio-data:
