@@ -1,14 +1,32 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "agent-studio"
 version = "0.1.0"
 requires-python = "==3.12.*"
 description = "Agent Studio M0 infrastructure bootstrap"
 
+[project.optional-dependencies]
+m0 = [
+  "pytest>=8.0",
+  "httpx>=0.27",
+  "pytest-playwright>=0.5",
+  "playwright>=1.49",
+]
+
+[tool.setuptools]
+packages = []
+
 [tool.pytest.ini_options]
-testpaths = ["tests/unit"]
-pythonpath = ["apps/api/src", "packages/vault/src", "packages/object-store/src", "workers/adk/src"]
+testpaths = ["tests/unit", "tests/m0"]
+pythonpath = [".", "apps/api/src", "packages/vault/src", "packages/object-store/src", "workers/adk/src"]
 markers = [
     "temporal: tests requiring a live Temporal server",
+    "m0_isolation: M0 workspace and identity contract tests",
+    "m0_ping_restart: M0 ping worker restart recovery tests",
+    "m0_exit: M0 exit checklist and infra gate tests",
 ]
 
 [tool.ruff]

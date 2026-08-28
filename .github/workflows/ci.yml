@@ -52,37 +52,65 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: M0 isolation harness placeholder
-        run: |
-          if [ -f tests/m0/harness_isolation.py ]; then
-            echo "Harness present — run isolation tests here"
-            exit 1
-          fi
-          echo "Skipping: tests/m0 harness not present (placeholder only)"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install M0 harness dependencies
+        run: pip install ".[m0]"
+      - name: Install Playwright browser
+        run: playwright install chromium
+      - name: Run M0 isolation harness
+        env:
+          STUDIO_API_URL: ${{ secrets.STUDIO_API_URL }}
+          STUDIO_WEB_URL: ${{ secrets.STUDIO_WEB_URL }}
+          M0_WORKSPACE_A_ID: ${{ secrets.M0_WORKSPACE_A_ID }}
+          M0_WORKSPACE_B_ID: ${{ secrets.M0_WORKSPACE_B_ID }}
+          M0_OWNER_EMAIL: ${{ secrets.M0_OWNER_EMAIL }}
+          M0_OWNER_PASSWORD: ${{ secrets.M0_OWNER_PASSWORD }}
+          M0_ADMIN_EMAIL: ${{ secrets.M0_ADMIN_EMAIL }}
+          M0_ADMIN_PASSWORD: ${{ secrets.M0_ADMIN_PASSWORD }}
+          M0_EDITOR_EMAIL: ${{ secrets.M0_EDITOR_EMAIL }}
+          M0_EDITOR_PASSWORD: ${{ secrets.M0_EDITOR_PASSWORD }}
+          M0_VIEWER_EMAIL: ${{ secrets.M0_VIEWER_EMAIL }}
+          M0_VIEWER_PASSWORD: ${{ secrets.M0_VIEWER_PASSWORD }}
+          M0_RUNNER_EMAIL: ${{ secrets.M0_RUNNER_EMAIL }}
+          M0_RUNNER_PASSWORD: ${{ secrets.M0_RUNNER_PASSWORD }}
+        run: pytest tests/m0 -m m0_isolation -q
 
   m0-ping-restart:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: M0 ping-restart harness placeholder
-        run: |
-          if [ -f tests/m0/harness_ping_restart.py ]; then
-            echo "Harness present — run ping-restart tests here"
-            exit 1
-          fi
-          echo "Skipping: tests/m0 harness not present (placeholder only)"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install M0 harness dependencies
+        run: pip install ".[m0]"
+      - name: Start compose stack
+        run: make up
+      - name: Run M0 ping-restart harness
+        env:
+          STUDIO_API_URL: ${{ secrets.STUDIO_API_URL }}
+          M0_WORKSPACE_A_ID: ${{ secrets.M0_WORKSPACE_A_ID }}
+          M0_OWNER_EMAIL: ${{ secrets.M0_OWNER_EMAIL }}
+          M0_OWNER_PASSWORD: ${{ secrets.M0_OWNER_PASSWORD }}
+          PING_WORKER_STOP_CMD: docker compose -f infra/compose/docker-compose.yml -p agent-studio stop studio-worker-ping
+          PING_WORKER_START_CMD: docker compose -f infra/compose/docker-compose.yml -p agent-studio start studio-worker-ping
+        run: pytest tests/m0 -m m0_ping_restart -q
 
   m0-exit:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: M0 exit harness placeholder
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install M0 harness dependencies
+        run: pip install ".[m0]"
+      - name: Run M0 exit gate
         run: |
-          if [ -f tests/m0/harness_exit.py ]; then
-            echo "Harness present — run exit tests here"
-            exit 1
-          fi
-          echo "Skipping: tests/m0 harness not present (placeholder only)"
+          bash tests/m0/check-m0-exit.sh
+          pytest tests/m0 -m m0_exit -q
 
   m1-auth:
     if: false

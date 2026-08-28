@@ -22,9 +22,7 @@ def test_bearer_auth_scoped_to_workspace(client):
     login(client, "owner@test.com", "owner-password-12")
     ws1 = create_workspace(client, "KeyWs1")
     ws2 = create_workspace(client, "KeyWs2")
-    created = client.post(
-        f"/v1/workspaces/{ws1['id']}/api-keys", json={"name": "one"}
-    ).json()
+    created = client.post(f"/v1/workspaces/{ws1['id']}/api-keys", json={"name": "one"}).json()
     secret = created["secret"]
     client.post("/v1/auth/logout")
 

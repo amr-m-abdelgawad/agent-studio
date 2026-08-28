@@ -1,4 +1,4 @@
-.PHONY: up down logs ping-stop ping-start compose-validate lint unit
+.PHONY: up down logs ping-stop ping-start compose-validate lint unit m0-exit m0-isolation m0-ping-restart
 
 COMPOSE_FILE := infra/compose/docker-compose.yml
 COMPOSE_PROJECT := agent-studio
@@ -36,3 +36,13 @@ migrate:
 
 unit:
 	python3 -m pytest tests/unit -q
+
+m0-exit:
+	bash tests/m0/check-m0-exit.sh
+	python3 -m pytest tests/m0 -m m0_exit -q
+
+m0-isolation:
+	python3 -m pytest tests/m0 -m m0_isolation -q
+
+m0-ping-restart:
+	python3 -m pytest tests/m0 -m m0_ping_restart -q
